@@ -1,0 +1,12 @@
+- name: Load a configuration from a Jinja2 template and commit
+  juniper.device.config:
+    template: "./roles/junos/templates/leaf.conf.j2"
+    load: merge
+    format: "text"
+    commit: yes
+    vars: "{{ hostvars[inventory_hostname] }}"
+    timeout: 120
+  register: response
+- name: Print the response
+  ansible.builtin.debug:
+    var: response

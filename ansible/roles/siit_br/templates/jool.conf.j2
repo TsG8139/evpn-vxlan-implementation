@@ -1,0 +1,17 @@
+{
+	"instance": "default",
+	"framework": "netfilter",
+
+	"global": {
+		"pool6": "64:ff9b::/96"
+	},
+
+	"eamt": [
+{% for eam in br.eamt %}
+       {
+          "ipv6 prefix": "{{ eam.v6 }}",
+          "ipv4 prefix": "{{ eam.v4 }}"
+       }{% if not loop.last %},{% endif %}
+{% endfor %}
+	]
+}

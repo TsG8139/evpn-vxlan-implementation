@@ -1,0 +1,21 @@
+leafs:
+  hosts:
+    leaf01:
+      ansible_host: 192.168.100.180
+      ansible_user: root
+      ansible_password: password123
+      ansible_connection: local
+      ansible_network_os: junipernetworks.junos.junos
+    leaf02:
+      ansible_host: 192.168.100.45
+      ansible_user: root
+      ansible_password: password123
+      ansible_connection: local
+      ansible_network_os: junipernetworks.junos.junos
+
+border_relays:
+  hosts:
+    br01:
+      ansible_host: 192.168.99.176
+      ansible_user: ubuntu
+      ansible_password: ubuntu

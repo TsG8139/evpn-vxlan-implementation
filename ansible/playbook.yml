@@ -1,0 +1,21 @@
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  tasks:
+    - name: Renderuj szablon do pliku
+      template:
+        src: "./roles/junos/templates/leaf.conf.j2"
+        dest: "./junos_output.conf"
+
+- name: EVPN Leaf config
+  hosts: leafs
+  gather_facts: no
+  roles:
+    - junos
+
+- name: SIIT-BR config
+  hosts: border_relays
+  gather_facts: yes
+  become: yes
+  roles:
+    - siit_br

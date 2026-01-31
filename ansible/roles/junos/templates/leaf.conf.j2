@@ -1,0 +1,280 @@
+#jinja2: lstrip_blocks: True, trim_blocks: True
+
+{% set device = devices[local_device] %}
+
+{% set subnet_map = {} %}
+{% set irb_counter = [1] %}
+
+{% for tenant_id in device.tenants %}
+    {% set tenant = tenants | selectattr("id", "equalto", tenant_id) | first %}
+    {% for vrf in tenant.vrfs %}
+        {% for subnet in vrf.subnets %}
+            {% set mapping_key = tenant.id ~ "_" ~ subnet %}
+            {% if mapping_key not in subnet_map %}
+                {% set _ = subnet_map.update({mapping_key: irb_counter[0]}) %}
+                {% set _ = irb_counter.append(irb_counter.pop(0) + 1) %}
+            {% endif %}
+        {% endfor %}
+    {% endfor %}
+{% endfor %}
+
+
+{% set spine_links = [] %}
+{% set server_links = [] %}
+{% set vlan_counter = [2] %}
+
+{% for conn in connections %}
+    {% if conn.leaf.name == local_device %}
+        {% if conn.other.type == 'spine' %}
+            {% set _ = spine_links.append(conn) %}
+        {% elif conn.other.type == 'server' %}
+            {% set _ = server_links.append(conn) %}
+        {% endif %}
+    {% endif %}
+{% endfor %}
+
+{% set port_vlan_map = {} %}
+{% for conn in connections %}
+    {% if conn.leaf.name == local_device and conn.other.type == 'server' %}
+        {% set iface_name = conn.leaf.interface %}
+        {% set server_name = conn.other.name %}
+
+        {% set local_subnet_map = {} %}
+        {% set local_counter = [2] %}
+
+        {% if server_name in devices %}
+            {% set allowed_tenants = devices[server_name].tenants %}
+
+            {% for tenant in tenants %}
+                {% if tenant.id in allowed_tenants %}
+                    {% for vrf in tenant.vrfs %}
+                        {% for subnet in vrf.subnets %}
+                            {% set subnet_key = tenant.id ~ "_" ~ subnet %}
+
+                            {% set _ = local_subnet_map.update({subnet_key: local_counter[0]}) %}
+                            {% set _ = local_counter.append(local_counter.pop(0) + 1) %}
+                        {% endfor %}
+                    {% endfor %}
+                {% endif %}
+            {% endfor %}
+
+            {% set _ = port_vlan_map.update({iface_name: local_subnet_map}) %}
+        {% endif %}
+    {% endif %}
+{% endfor %}
+
+
+routing-instances {
+{% for tenant_id in device.tenants %}
+    {% set tenant = tenants | selectattr("id", "equalto", tenant_id) | first %}
+    {% set tenant_base_vni = (tenant.id * 1024)  %}
+    {% set vni_offset = [0] %}
+    {% for vrf in tenant.vrfs %}
+        {% set current_l3_vni = tenant_base_vni + vni_offset[0] %}
+        {% set _ = vni_offset.append(vni_offset.pop(0) + 1) %}
+        {{ tenant.name }}-{{ current_l3_vni }}_ipvrf {
+            instance-type vrf;
+            protocols {
+                evpn {
+                    irb-symmetric-routing {
+                        vni {{ current_l3_vni }};
+                    }
+                    ip-prefix-routes {
+                        advertise direct-nexthop;
+                        encapsulation vxlan;
+                        vni {{ current_l3_vni }};
+                    }
+                }
+            }
+            {% for subnet in vrf.subnets %}
+                {% set current_key = tenant.id ~ "_" ~ subnet %}
+                {% set irb_num = subnet_map[current_key] %}
+            interface irb.{{ irb_num }};
+            {% endfor %}
+
+            route-distinguisher {{ tenant.id }}:{{ current_l3_vni }};
+            vrf-target target:{{ tenant.id }}:{{ current_l3_vni }};
+        }
+        {{ tenant.name }}-{{ current_l3_vni }}_macvrf {
+            instance-type mac-vrf;
+            {% set vni_l2_list = [] %}
+
+            vlans {
+              {% for subnet in vrf.subnets %}
+                  {% set current_l2_vni = tenant_base_vni + vni_offset[0] %}
+                  {% set _ = vni_l2_list.append(current_l2_vni) %}
+                  {% set _ = vni_offset.append(vni_offset.pop(0) + 1) %}
+                  {% set irb_key = tenant.id ~ "_" ~ subnet %}
+                  {% set subnet_lookup_key = tenant.id ~ "_" ~ subnet %}
+
+                  vlan-{{ subnet }} {
+                      vlan-id none;
+                      l3-interface irb.{{ subnet_map[irb_key] }};
+                      vxlan { vni {{ current_l2_vni }}; }
+
+                  {% for interface_name, subnets_on_port in port_vlan_map.items() %}
+                      {% if subnet_lookup_key in subnets_on_port %}
+                      interface {{ interface_name }}.{{ subnets_on_port[subnet_lookup_key] }};
+                      {% endif %}
+                  {% endfor %}
+                  }
+              {% endfor %}
+            }
+            vtep-source-interface lo0.0;
+            service-type vlan-aware;
+            route-distinguisher {{ tenant.id }}:{{ vni_l2_list[0] }};
+            vrf-target target:{{ tenant.id }}:{{ vni_l2_list[0] }};
+
+            protocols {
+                evpn {
+                    encapsulation vxlan;
+                    default-gateway do-not-advertise;
+                    extended-vni-list [ {{ vni_l2_list | join(' ') }} ];
+                }
+            }
+        }
+      {% endfor %}
+
+  {% endfor %}
+}
+
+
+
+policy-options {
+    policy-statement BGP_allow-loopback {
+        term 1 {
+            from interface lo0.0;
+            then accept;
+        }
+        term 2 {
+            then reject;
+        }
+    }
+    policy-statement PFE-ECMP {
+        then {
+            load-balance per-flow;
+        }
+    }
+}
+
+routing-options {
+    router-id {{ device.router_id }}
+    autonomous-system {{ device.asn }};
+    forwarding-table {
+        export PFE-ECMP;
+    }
+}
+
+interfaces {
+    lo0 {
+        unit 0 {
+            family inet {
+                address {{ device.router_id }};
+            }
+        }
+    }
+    irb {
+        mtu 9192;
+    {% for tenant_id in device.tenants %}
+        {% set tenant = tenants | selectattr("id", "equalto", tenant_id) | first %}
+        {% for vrf in tenant.vrfs %}
+            {% for subnet in vrf.subnets %}
+                {% set irb_key = tenant.id ~ "_" ~ subnet %}
+        unit {{ subnet_map[irb_key] }} {
+            family inet6 {
+                address {{ "%s:%s::1/64" | format(tenant.assigned_prefix, subnet) }};
+            }
+        }
+            {% endfor %}
+        {% endfor %}
+    {% endfor %}
+    }
+{% for link in spine_links %}
+    {{ link.leaf.interface }} {
+        description "Uplink-to-{{ link.other.name }} [{{ link.other.interface }}]";
+        mtu 9192;
+        unit 0 {
+            family inet;
+            family inet6;
+        }
+    }
+{% endfor %}
+
+    {% for interface_name, subnets_dict in port_vlan_map.items() %}
+
+    {{ interface_name }} {
+        flexible-vlan-tagging;
+        encapsulation extended-vlan-bridge;
+
+        {% for subnet_key, vlan_id in subnets_dict.items() %}
+        unit {{ vlan_id }} {
+            vlan-id {{ vlan_id }};
+            description "{{ subnet_key }}";
+        }
+        {% endfor %}
+    }
+    {% endfor %}
+}
+
+protocols {
+    router-advertisement {
+    {% for link in spine_links %}
+        interface {{ link.leaf.interface }}.0;
+    {% endfor %}
+    }
+
+    bgp {
+        group auto-underlay_spines {
+            type external;
+            family inet {
+                unicast {
+                    extended-nexthop;
+                }
+            }
+            family inet6 {
+                unicast;
+            }
+            export BGP_allow-loopback;
+            peer-as 65001;
+            multipath;
+            bfd-liveness-detection {
+                minimum-interval 333;
+                multiplier 3;
+            }
+            dynamic-neighbor spines {
+                peer-auto-discovery {
+                    family inet6 {
+                        ipv6-nd;
+                    }
+            {% for link in spine_links %}
+                interface {{ link.leaf.interface }}.0;
+            {% endfor %}
+                }
+            }
+        }
+        group overlay_spines {
+            type external;
+            multihop;
+            local-address {{ device.router_id }};
+            family evpn {
+                signaling;
+            }
+            peer-as 65001;
+            bfd-liveness-detection {
+                minimum-interval 333;
+                multiplier 3;
+            }
+            {% for conn in connections %}
+                {% if conn.leaf.name == local_device and conn.other.type == 'spine' %}
+                    {% set neighbor_name = conn.other.name %}
+                    {% if neighbor_name in devices %}
+                        {% set neighbor_rid = devices[neighbor_name].router_id %}
+            neighbor {{ neighbor_rid }} {
+                description Link-to-{{ neighbor_name }};
+            }
+                    {% endif %}
+                {% endif %}
+            {% endfor %}
+        }
+    }
+}

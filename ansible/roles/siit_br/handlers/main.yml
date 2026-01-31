@@ -1,0 +1,8 @@
+- name: Restart FRR
+  systemd:
+    name: frr
+    state: reloaded
+
+- name: Reload Jool
+  shell: |
+    jool_siit file handle /etc/jool/jool_siit.conf

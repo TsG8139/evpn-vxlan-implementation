@@ -1,0 +1,75 @@
+tenants:
+  - name: "Tenant-A"
+    id: 100
+    assigned_prefix: "2001:db8:1520"
+    vrfs:
+      - id: 1
+        subnets:
+          - "5bbb"
+          - "5eb6"
+          - "2e21"
+      - id: 2
+        subnets:
+          - "e424"
+          - "92a9"
+  - name: "Tenant-B"
+    id: 200
+    assigned_prefix: "2001:db8:c63c"
+    vrfs:
+      - id: 1
+        subnets:
+          - "5bbb"
+          - "5eb6"
+          - "2e21"
+      - id: 2
+        subnets:
+          - "e424"
+          - "92a9"
+devices:
+  leaf01:
+    router_id: 1.1.1.1
+    asn: 65000
+    tenants: [ 100 ]
+  leaf02:
+    router_id: 2.2.2.2
+    asn: 65000
+    tenants: [ 100, 200 ]
+  spine01:
+    router_id: 3.3.3.3
+    asn: 65001
+  server01:
+    tenants: [ 100, 200 ]
+  br01:
+    router_id: 4.4.4.4
+    asn: 65002
+    remote_asn: 65000
+
+connections:
+  - leaf:
+      name: "leaf01"
+      interface: "ge-0/0/0"
+    other:
+      name: "spine01"
+      type: "spine"
+      interface: "ge-0/0/0"
+  - leaf:
+      name: "leaf02"
+      interface: "ge-0/0/0"
+    other:
+      name: "spine01"
+      type: "spine"
+      interface: "ge-0/0/1"
+  - leaf:
+      name: "leaf02"
+      interface: "ge-0/0/2"
+    other:
+      name: "server01"
+      type: "server"
+      interface: "?"
+
+br:
+  eamt:
+    - v6: "2001:db8:a4f1:7c2d:aaaa:aa00:0100:1/128"
+      v4: "192.0.2.1/32"
+    - v6: "2001:db8:e45a:b12f:68e2:c1f1:8f29:443f/128"
+      v4: "192.0.2.2/32"

@@ -1,0 +1,81 @@
+- name: Update apt cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Install Jool and FRR
+  apt:
+    name:
+      - frr
+      - jool-tools
+      - jool-dkms
+    state: present
+
+- name: Modprobe jool_siit
+  modprobe:
+    name: jool_siit
+    state: present
+
+- name: Enable jool_siit modprobe on start
+  copy:
+    content: "jool_siit"
+    dest: /etc/modules-load.d/jool.conf
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Enable IPv4 forwarding
+  sysctl:
+    name: net.ipv4.ip_forward
+    value: '1'
+    sysctl_set: yes
+    state: present
+    reload: yes
+
+- name: Enable IPv6 forwarding
+  sysctl:
+    name: net.ipv6.conf.all.forwarding
+    value: '1'
+    sysctl_set: yes
+    state: present
+    reload: yes
+
+- name: Enable FRR bgpd
+  lineinfile:
+    path: /etc/frr/daemons
+    regexp: "^{{ item }}=.*"
+    line: "{{ item }}=yes"
+  loop:
+    - bgpd
+
+- name: Start FRR service
+  systemd:
+    name: frr
+    state: started
+    enabled: yes
+
+- name: Create jool config directory
+  file:
+    path: /etc/jool
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Load Jool configuration from a Jinja2 template
+  template:
+    src: jool.conf.j2
+    dest: /etc/jool/jool_siit.conf
+    owner: root
+    group: root
+    mode: '0640'
+  notify: Reload Jool
+
+- name: Load FRR configuration from a Jinja2 template
+  template:
+    src: frr.conf.j2
+    dest: /etc/frr/frr.conf
+    owner: frr
+    group: frr
+    mode: '0640'
+  notify: Restart FRR

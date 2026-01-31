@@ -1,0 +1,44 @@
+{% set device = devices[local_device] %}
+
+frr version 8.4.4
+frr defaults traditional
+hostname ubuntu-cloud
+service integrated-vtysh-config
+
+!
+{% for eam in br.eamt %}
+ip route {{ eam.v4 }} blackhole
+{% endfor %}
+
+ipv6 route 64:ff9b::/96 blackhole
+!
+interface ens6
+ ipv6 nd ra-interval 20
+ no ipv6 nd suppress-ra
+exit
+!
+interface ens7
+ ipv6 nd ra-interval 20
+ no ipv6 nd suppress-ra
+exit
+!
+router bgp {{ device.asn }}
+ bgp router-id {{ device.router_id }}
+ no bgp ebgp-requires-policy
+ neighbor ens6 interface remote-as {{ device.remote_asn }}
+ neighbor ens7 interface remote-as {{ device.remote_asn }}
+ !
+ address-family ipv4 unicast
+{% for eam in br.eamt %}
+    network {{ eam.v4 }}
+{% endfor %}
+ exit-address-family
+ !
+ address-family ipv6 unicast
+  network 64:ff9b::/96
+  neighbor ens6 activate
+  neighbor ens7 activate
+ exit-address-family
+exit
+!
+end
