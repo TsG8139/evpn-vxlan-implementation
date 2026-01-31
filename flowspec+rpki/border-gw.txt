@@ -1,0 +1,144 @@
+## Last changed: 2026-01-28 00:57:23 UTC
+version 23.2R1.15;
+system {
+    syslog {
+        file interactive-commands {
+            interactive-commands any;
+        }
+        file messages {
+            any notice;
+            authorization info;
+        }
+    }
+    processes {
+        dhcp-service {
+            traceoptions {
+                file dhcp_logfile size 10m;
+                level all;
+                flag packet;
+            }
+         }
+    }
+    ## Warning: missing mandatory statement(s): 'root-authentication'
+}
+interfaces {
+    ge-0/0/0 {
+        unit 0 {
+            family inet {
+                address 192.0.2.1/30;
+            }
+        }
+    }
+    ge-0/0/1 {
+        unit 0 {
+            family inet {
+                address 192.0.2.6/30;
+            }
+        }
+    }
+    fxp0 {
+        unit 0 {
+            family inet {
+                dhcp {
+                    vendor-id Juniper-vmx-VM697925276A;
+                }
+            }
+            family inet6 {
+                dhcpv6-client {
+                    client-type stateful;
+                    client-ia-type ia-na;
+                    client-identifier duid-type duid-ll;
+                    vendor-id Juniper:vmx:VM697925276A;
+                }
+            }
+        }
+    }
+    lo0 {
+        unit 0 {
+            family inet {
+                address 192.0.2.254/32;
+            }
+        }
+    }
+}
+policy-options {
+    policy-statement export-direct {
+        term export {
+            from protocol [ direct bgp ];
+            then accept;
+        }
+        then reject;
+    }
+    policy-statement validation {
+        term valid {
+            from {
+                protocol bgp;
+                validation-database valid;
+            }
+            then {
+                validation-state valid;
+                accept;
+            }
+        }
+        term not-found {
+            from {
+                protocol bgp;
+                validation-database unknown;
+            }
+            then {
+                validation-state unknown;
+                accept;
+            }
+        }
+        term invalid {
+            from {
+                protocol bgp;
+                validation-database invalid;
+            }
+            then {
+                validation-state invalid;
+                reject;
+            }
+        }
+    }
+}
+routing-options {
+    router-id 1.1.1.1;
+    autonomous-system 65000;
+    validation {
+        group test {
+            session 192.0.2.2 {
+                port 3323;
+            }
+        }
+    }
+}
+protocols {
+    router-advertisement {
+        interface fxp0.0 {
+            managed-configuration;
+        }
+    }
+    bgp {
+        group gobgp {
+            type internal;
+            family inet {
+                flow;
+            }
+            export export-direct;
+            peer-as 65000;
+            neighbor 192.0.2.2;
+        }
+        group pcss {
+            type external;
+            import validation;
+            family inet {
+                unicast;
+                flow;
+            }
+            export export-direct;
+            peer-as 9112;
+            neighbor 192.0.2.5;
+        }
+    }
+}

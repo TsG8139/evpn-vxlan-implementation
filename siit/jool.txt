@@ -1,0 +1,14 @@
+jool_siit instance add --netfilter --pool6 64:ff9b::/96
+jool_siit eamt add 192.0.2.1/32 2001:db8:a4f1:7c2d:aaaa:aa00:0100:1/128
+jool_siit eamt add 192.0.2.2/32 2001:db8:e45a:b12f:68e2:c1f1:8f29:443f/128
+
+root@ubuntu-cloud:~# jool_siit eamt display
++---------------------------------------------+--------------------+
+|                                 IPv6 Prefix |        IPv4 Prefix |
++---------------------------------------------+--------------------+
+|                       2001:db8:12:34::1/128 |       192.0.2.1/32 |
++---------------------------------------------+--------------------+
+root@ubuntu-cloud:~# jool_siit address query 203.0.113.1
+64:ff9b::cb00:7101
+root@ubuntu-cloud:~# jool_siit address query 192.0.2.1
+2001:db8:12:34::1

@@ -1,0 +1,1 @@
+./gobgp global rib -a ipv4-flowspec add match destination 192.0.2.254/32 then discard

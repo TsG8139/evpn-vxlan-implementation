@@ -1,0 +1,255 @@
+
+## Last changed: 2026-01-24 22:26:15 UTC
+version 23.2R1.14;
+system {
+    root-authentication {
+        encrypted-password "$6$ZckCv58Y$fgb.pE3Ix.4i4Q5kgP/oH.8ZQLZzcZ5wdWdmYRiyFUSZv5AEmgxkELJtzqdIYvjBkuA.QpHqH6OolCt3OvPHc."; ## SECRET-DATA
+    }
+    arp {
+        aging-timer 5;
+    }
+    syslog {
+        file interactive-commands {
+            interactive-commands any;
+        }
+        file messages {
+            any notice;
+            authorization info;
+        }
+    }
+    processes {
+        dhcp-service {
+            traceoptions {
+                file dhcp_logfile size 10m;
+                level all;
+                flag packet;
+            }
+        }
+    }
+}
+interfaces {
+    ge-0/0/0 {
+        vlan-tagging;
+        unit 100 {
+            vlan-id 100;
+            family inet6;
+        }
+        unit 101 {
+            vlan-id 101;
+            family inet;
+            family inet6;
+        }
+    }
+    ge-0/0/1 {
+        vlan-tagging;
+        unit 100 {
+            vlan-id 100;
+            family inet6;
+        }
+        unit 101 {
+            vlan-id 101;
+            family inet;
+            family inet6;
+        }
+    }
+    ge-0/0/2 {
+        unit 0 {
+            family inet6 {
+                address 2001:db8::1/64;
+            }
+        }
+    }
+    fxp0 {
+        unit 0 {
+            family inet {
+                dhcp {
+                    vendor-id Juniper-ex9214-VM69752A2235;
+                }
+            }
+            family inet6 {
+                dhcpv6-client {
+                    client-type stateful;
+                    client-ia-type ia-na;
+                    client-identifier duid-type duid-ll;
+                    vendor-id Juniper:ex9214:VM69752A2235;
+                }
+            }
+        }
+    }
+}
+multi-chassis {
+    mc-lag {
+        consistency-check;
+    }
+}
+policy-options {
+    policy-statement export-connected {
+        term send {
+            from protocol [ direct bgp ];
+            then accept;
+        }
+        then reject;
+    }
+}
+routing-instances {
+    Tenant-A {
+        instance-type virtual-router;
+        routing-options {
+            router-id 3.3.3.3;
+            autonomous-system 65001;
+        }
+        protocols {
+            ##
+            ## Warning: requires 'bgp' license
+            ##
+            bgp {
+                group nat64 {
+                    type external;
+                    family inet {
+                        unicast {
+                            extended-nexthop;
+                        }
+                    }
+                    family inet6 {
+                        unicast;
+                    }
+                    export export-connected;
+                    peer-as 65002;
+                    as-override;
+                    dynamic-neighbor n {
+                        peer-auto-discovery {
+                            family inet6 {
+                                ipv6-nd;
+                            }
+                            interface ge-0/0/0.100;
+                            interface ge-0/0/1.100;
+                        }
+                    }
+                }
+            }
+        }
+        interface ge-0/0/0.100;
+        interface ge-0/0/1.100;
+        interface ge-0/0/2.0;
+    }
+}
+routing-options {
+    router-id 33.33.33.33;
+    autonomous-system 65003;
+}
+protocols {
+    router-advertisement {
+        interface fxp0.0 {
+            managed-configuration;
+        }
+        interface ge-0/0/0.101;
+        interface ge-0/0/1.101;
+        interface ge-0/0/0.100;
+        interface ge-0/0/1.100;
+    }
+    ##
+    ## Warning: requires 'bgp' license
+    ##
+    bgp {
+        group nat64 {
+            type external;
+            family inet {
+                unicast {
+                    extended-nexthop;
+                }
+            }
+            family inet6 {
+                unicast;
+            }
+            export export-connected;
+            peer-as 65002;
+            dynamic-neighbor n {
+                peer-auto-discovery {
+                    family inet6 {
+                        ipv6-nd;
+                    }
+                    interface ge-0/0/0.101;
+                    interface ge-0/0/1.101;
+                }
+            }
+        }
+    }
+    lldp {
+        interface all;
+    }
+    lldp-med {
+        interface all;
+    }
+}
+
+
+
+root# show | display set
+set version 23.2R1.14
+set system root-authentication encrypted-password "$6$ZckCv58Y$fgb.pE3Ix.4i4Q5kgP/oH.8ZQLZzcZ5wdWdmYRiyFUSZv5AEmgxkELJtzqdIYvjBkuA.QpHqH6OolCt3OvPHc."
+set system arp aging-timer 5
+set system syslog file interactive-commands interactive-commands any
+set system syslog file messages any notice
+set system syslog file messages authorization info
+set system processes dhcp-service traceoptions file dhcp_logfile
+set system processes dhcp-service traceoptions file size 10m
+set system processes dhcp-service traceoptions level all
+set system processes dhcp-service traceoptions flag packet
+set interfaces ge-0/0/0 vlan-tagging
+set interfaces ge-0/0/0 unit 100 vlan-id 100
+set interfaces ge-0/0/0 unit 100 family inet6
+set interfaces ge-0/0/0 unit 101 vlan-id 101
+set interfaces ge-0/0/0 unit 101 family inet
+set interfaces ge-0/0/0 unit 101 family inet6
+set interfaces ge-0/0/1 vlan-tagging
+set interfaces ge-0/0/1 unit 100 vlan-id 100
+set interfaces ge-0/0/1 unit 100 family inet6
+set interfaces ge-0/0/1 unit 101 vlan-id 101
+set interfaces ge-0/0/1 unit 101 family inet
+set interfaces ge-0/0/1 unit 101 family inet6
+set interfaces ge-0/0/2 unit 0 family inet6 address 2001:db8::1/64
+set interfaces fxp0 unit 0 family inet dhcp vendor-id Juniper-ex9214-VM69752A2235
+set interfaces fxp0 unit 0 family inet6 dhcpv6-client client-type stateful
+set interfaces fxp0 unit 0 family inet6 dhcpv6-client client-ia-type ia-na
+set interfaces fxp0 unit 0 family inet6 dhcpv6-client client-identifier duid-type duid-ll
+set interfaces fxp0 unit 0 family inet6 dhcpv6-client vendor-id Juniper:ex9214:VM69752A2235
+set multi-chassis mc-lag consistency-check
+set policy-options prefix-list link-local 169.254.0.0/16
+set policy-options policy-statement export-connected term exclude from prefix-list link-local
+set policy-options policy-statement export-connected term exclude then reject
+set policy-options policy-statement export-connected term send from protocol direct
+set policy-options policy-statement export-connected term send from protocol bgp
+set policy-options policy-statement export-connected term send then accept
+set policy-options policy-statement export-connected then reject
+set routing-instances Tenant-A instance-type virtual-router
+set routing-instances Tenant-A routing-options router-id 3.3.3.3
+set routing-instances Tenant-A routing-options autonomous-system 65001
+set routing-instances Tenant-A protocols bgp group nat64 type external
+set routing-instances Tenant-A protocols bgp group nat64 family inet unicast extended-nexthop
+set routing-instances Tenant-A protocols bgp group nat64 family inet6 unicast
+set routing-instances Tenant-A protocols bgp group nat64 export export-connected
+set routing-instances Tenant-A protocols bgp group nat64 peer-as 65002
+set routing-instances Tenant-A protocols bgp group nat64 as-override
+set routing-instances Tenant-A protocols bgp group nat64 dynamic-neighbor n peer-auto-discovery family inet6 ipv6-nd
+set routing-instances Tenant-A protocols bgp group nat64 dynamic-neighbor n peer-auto-discovery interface ge-0/0/0.100
+set routing-instances Tenant-A protocols bgp group nat64 dynamic-neighbor n peer-auto-discovery interface ge-0/0/1.100
+set routing-instances Tenant-A interface ge-0/0/0.100
+set routing-instances Tenant-A interface ge-0/0/1.100
+set routing-instances Tenant-A interface ge-0/0/2.0
+set routing-options router-id 33.33.33.33
+set routing-options autonomous-system 65003
+set protocols router-advertisement interface fxp0.0 managed-configuration
+set protocols router-advertisement interface ge-0/0/0.101
+set protocols router-advertisement interface ge-0/0/1.101
+set protocols router-advertisement interface ge-0/0/0.100
+set protocols router-advertisement interface ge-0/0/1.100
+set protocols bgp group nat64 type external
+set protocols bgp group nat64 family inet unicast extended-nexthop
+set protocols bgp group nat64 family inet6 unicast
+set protocols bgp group nat64 export export-connected
+set protocols bgp group nat64 peer-as 65002
+set protocols bgp group nat64 dynamic-neighbor n peer-auto-discovery family inet6 ipv6-nd
+set protocols bgp group nat64 dynamic-neighbor n peer-auto-discovery interface ge-0/0/0.101
+set protocols bgp group nat64 dynamic-neighbor n peer-auto-discovery interface ge-0/0/1.101
+set protocols lldp interface all
+set protocols lldp-med interface all

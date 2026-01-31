@@ -1,0 +1,92 @@
+
+## Last changed: 2026-01-28 00:59:59 UTC
+ version 23.2R1.15;
+system {
+    syslog {
+        file interactive-commands {
+            interactive-commands any;
+        }
+        file messages {
+            any notice;
+            authorization info;
+        }
+    }
+    processes {
+        dhcp-service {
+            traceoptions {
+                file dhcp_logfile size 10m;
+                 level all;
+                 flag packet;
+             }
+        }
+     }
+    ## Warning: missing mandatory statement(s): 'root-authentication'
+  }
+interfaces {
+    ge-0/0/0 {
+        unit 0 {
+            family inet {
+                address 192.0.2.5/30;
+            }
+        }
+    }
+    fxp0 {
+        unit 0 {
+            family inet {
+                dhcp {
+                    vendor-id Juniper-vmx-VM69792E39E6;
+                }
+            }
+            family inet6 {
+                dhcpv6-client {
+                    client-type stateful;
+                    client-ia-type ia-na;
+                    client-identifier duid-type duid-ll;
+                    vendor-id Juniper:vmx:VM69792E39E6;
+                }
+            }
+        }
+    }
+    lo0 {
+        unit 0 {
+            family inet {
+                address 62.3.160.1/19;
+                address 1.1.1.1/32;
+                address 150.254.0.1/16;
+            }
+        }
+    }
+}
+policy-options {
+    policy-statement export-direct {
+        term export {
+            from protocol direct;
+            then accept;
+        }
+        then reject;
+    }
+}
+routing-options {
+    router-id 3.3.3.3;
+    autonomous-system 9112;
+}
+protocols {
+    router-advertisement {
+        interface fxp0.0 {
+            managed-configuration;
+        }
+    }
+    bgp {
+        group dc {
+            type external;
+            family inet {
+                unicast;
+                flow;
+            }
+            export export-direct;
+            peer-as 65000;
+            neighbor 192.0.2.6;
+        }
+    }
+}
+

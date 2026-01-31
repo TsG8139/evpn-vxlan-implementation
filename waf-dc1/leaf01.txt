@@ -1,0 +1,131 @@
+
+## Last changed: 2026-01-27 02:08:18 UTC
+version 23.2R1.14;
+system {
+    root-authentication {
+        encrypted-password "$6$KjaLYf02$7n.M2bVMHvzABgLz7ojotTC9QO3YHkH2/v6nzpzhrIz1T3QF73gCEKvIIXAOESQO0V9kvHfophKQxh19bupY3."; ## SECRET-DATA
+    }
+    services {
+        ssh {
+            root-login allow;
+              }
+    }
+    arp {
+        aging-timer 5;
+     }
+     syslog {
+        file interactive-commands {
+              interactive-commands any;
+          }
+        file messages {
+             any notice;
+             authorization info;
+         }
+    }
+    processes {
+        dhcp-service {
+            traceoptions {
+                file dhcp_logfile size 10m;
+                level all;
+                flag packet;
+            }
+        }
+    }
+}
+interfaces {
+    ge-0/0/0 {
+        unit 0 {
+            family inet;
+            family inet6;
+        }
+    }
+    ge-0/0/2 {
+        unit 0 {
+            family inet {
+                address 172.16.10.2/24;
+            }
+        }
+    }
+    fxp0 {
+        unit 0 {
+            family inet {
+                dhcp {
+                    vendor-id Juniper-ex9214-VM6977F7BD4F;
+                }
+            }
+            family inet6 {
+                dhcpv6-client {
+                    client-type stateful;
+                    client-ia-type ia-na;
+                    client-identifier duid-type duid-ll;
+                    vendor-id Juniper:ex9214:VM6977F7BD4F;
+                }
+            }
+        }
+    }
+    lo0 {
+        unit 0 {
+            family inet {
+                address 192.168.110.1/32;
+            }
+        }
+    }
+}
+multi-chassis {
+    mc-lag {
+        consistency-check;
+    }
+}
+policy-options {
+    policy-statement export-direct {
+        term export {
+            from protocol direct;
+            then accept;
+        }
+        then reject;
+    }
+}
+routing-options {
+    router-id 1.1.1.1;
+    autonomous-system 65000;
+}
+protocols {
+    router-advertisement {
+        interface fxp0.0 {
+            managed-configuration;
+        }
+        interface ge-0/0/0.0;
+    }
+    ##
+    ## Warning: requires 'bgp' license
+    ##
+    bgp {
+        group waf {
+            type external;
+            family inet {
+                unicast {
+                    extended-nexthop;
+                }
+            }
+            family inet6 {
+                unicast;
+            }
+            export export-direct;
+            peer-as 65001;
+            dynamic-neighbor waf {
+                peer-auto-discovery {
+                    family inet6 {
+                        ipv6-nd;
+                    }
+                    interface ge-0/0/0.0;
+                }
+            }
+        }
+    }
+    lldp {
+        interface all;
+    }
+    lldp-med {
+        interface all;
+    }
+}

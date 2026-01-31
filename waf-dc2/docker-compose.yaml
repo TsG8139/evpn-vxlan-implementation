@@ -1,0 +1,8 @@
+
+services:
+  coraza-spoa:
+    image: coraza-spoa-test:latest
+    container_name: coraza-spoa
+    restart: unless-stopped
+    volumes:
+      - /var/run/coraza:/var/run/coraza

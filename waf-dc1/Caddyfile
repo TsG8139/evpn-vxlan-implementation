@@ -1,0 +1,22 @@
+{
+    auto_https off
+    order coraza_waf first
+}
+
+:80 {
+    log {
+        output file /var/log/caddy/access.log
+    }
+
+    coraza_waf {
+        load_owasp_crs
+        directives `
+            Include /etc/caddy/coraza.conf-recommended
+            Include /etc/caddy/crs-setup.conf
+            Include /etc/caddy/rules/*.conf
+            SecRuleEngine On
+        `
+    }
+
+    reverse_proxy 172.16.10.10:80
+}

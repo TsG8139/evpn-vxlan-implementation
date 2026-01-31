@@ -1,0 +1,628 @@
+
+set version 24.4R1.9
+set system root-authentication encrypted-password "$6$1P6zvzZ7$Kb30ZHaH0P0V4VEjK385/xZHs//G0pE3BwK0AA/bNpLrcATsBv377ArxrDQiaR0AZ5oecBg0MJQ2p6grWI19O."
+set system services ssh root-login allow
+set system services web-management http interface fxp0.0
+set system services web-management https system-generated-certificate
+set system services web-management https interface fxp0.0
+set system syslog file interactive-commands interactive-commands any
+set system syslog file messages any any
+set system syslog file messages authorization info
+set system license autoupdate url https://ae1.juniper.net/junos/key_retrieval
+set system security-profile tenants tenant Tenant-A
+set chassis high-availability local-id 1
+set chassis high-availability local-id local-ip 2001:db8:540::1
+set chassis high-availability local-id local-forwarding-ip 2001:db8:540::100
+set chassis high-availability peer-id 2 peer-ip 2001:db8:540::2
+set chassis high-availability peer-id 2 interface lo0.1
+set chassis high-availability peer-id 2 routing-instance ICL
+set chassis high-availability peer-id 2 vpn-profile icl
+set chassis high-availability peer-id 2 liveness-detection minimum-interval 1000
+set chassis high-availability peer-id 2 liveness-detection multiplier 3
+set chassis high-availability services-redundancy-group 0 peer-id 2
+set security pki ca-profile ISRG_Root_X1 ca-identity ISRG_Root_X1
+set security pki ca-profile ISRG_Root_X1 pre-load
+set security pki ca-profile Lets_Encrypt ca-identity Lets_Encrypt
+set security pki ca-profile Lets_Encrypt enrollment url https://acme-v02.api.letsencrypt.org/directory
+set security ike proposal icl-prop authentication-method pre-shared-keys
+set security ike proposal icl-prop dh-group group20
+set security ike proposal icl-prop encryption-algorithm aes-256-gcm
+set security ike proposal icl-prop lifetime-seconds 3600
+set security ike policy icl proposals icl-prop
+set security ike policy icl pre-shared-key ascii-text "$9$2CgUHPfz/9pPf1RSyKv"
+set security ike gateway icl ike-policy icl
+set security ike gateway icl version v2-only
+set security ipsec proposal icl-prop encryption-algorithm aes-256-gcm
+set security ipsec proposal icl-prop lifetime-seconds 3600
+set security ipsec policy icl-policy perfect-forward-secrecy keys group20
+set security ipsec policy icl-policy proposals icl-prop
+set security ipsec vpn icl ha-link-encryption
+set security ipsec vpn icl ike gateway icl
+set security ipsec vpn icl ike ipsec-policy icl-policy
+set security forwarding-options family mpls mode packet-based
+set security flow traceoptions file DEBUG_ROOT
+set security flow traceoptions file size 2m
+set security flow traceoptions flag basic-datapath
+set security screen ids-option untrust-screen icmp ping-death
+set security screen ids-option untrust-screen ip source-route-option
+set security screen ids-option untrust-screen ip tear-drop
+set security screen ids-option untrust-screen tcp syn-flood alarm-threshold 1024
+set security screen ids-option untrust-screen tcp syn-flood attack-threshold 200
+set security screen ids-option untrust-screen tcp syn-flood source-threshold 1024
+set security screen ids-option untrust-screen tcp syn-flood destination-threshold 2048
+set security screen ids-option untrust-screen tcp syn-flood queue-size 2000
+set security screen ids-option untrust-screen tcp syn-flood timeout 20
+set security screen ids-option untrust-screen tcp land
+set security policies from-zone trust to-zone trust policy default-permit match source-address any
+set security policies from-zone trust to-zone trust policy default-permit match destination-address any
+set security policies from-zone trust to-zone trust policy default-permit match application any
+set security policies from-zone trust to-zone trust policy default-permit then permit
+set security policies from-zone trust to-zone untrust policy default-permit match source-address any
+set security policies from-zone trust to-zone untrust policy default-permit match destination-address any
+set security policies from-zone trust to-zone untrust policy default-permit match application any
+set security policies from-zone trust to-zone untrust policy default-permit then permit
+set security policies from-zone icl to-zone icl policy permit match source-address any
+set security policies from-zone icl to-zone icl policy permit match destination-address any
+set security policies from-zone icl to-zone icl policy permit match application any
+set security policies from-zone icl to-zone icl policy permit then permit
+set security policies global policy permit-to-tenant match source-address any
+set security policies global policy permit-to-tenant match destination-address any
+set security policies global policy permit-to-tenant match dynamic-application any
+set security policies global policy permit-to-tenant match from-zone underlay
+set security policies global policy permit-to-tenant match to-zone any
+set security policies global policy permit-to-tenant then permit
+set security policies pre-id-default-policy then log session-close
+set security zones security-zone trust tcp-rst
+set security zones security-zone untrust screen untrust-screen
+set security zones security-zone underlay host-inbound-traffic system-services ping
+set security zones security-zone underlay host-inbound-traffic protocols bgp
+set security zones security-zone underlay host-inbound-traffic protocols bfd
+set security zones security-zone underlay interfaces ge-0/0/0.54
+set security zones security-zone underlay interfaces ge-0/0/1.54
+set security zones security-zone icl host-inbound-traffic system-services ike
+set security zones security-zone icl host-inbound-traffic system-services ping
+set security zones security-zone icl host-inbound-traffic protocols bgp
+set security zones security-zone icl host-inbound-traffic protocols bfd
+set security zones security-zone icl interfaces lo0.1
+set security zones security-zone icl interfaces ge-0/0/0.55
+set security zones security-zone icl interfaces ge-0/0/1.55
+set interfaces ge-0/0/0 vlan-tagging
+set interfaces ge-0/0/0 unit 54 vlan-id 54
+set interfaces ge-0/0/0 unit 54 family inet6
+set interfaces ge-0/0/0 unit 54 family mpls
+set interfaces ge-0/0/0 unit 55 vlan-id 55
+set interfaces ge-0/0/0 unit 55 family inet6
+set interfaces ge-0/0/1 vlan-tagging
+set interfaces ge-0/0/1 unit 54 vlan-id 54
+set interfaces ge-0/0/1 unit 54 family inet6
+set interfaces ge-0/0/1 unit 54 family mpls
+set interfaces ge-0/0/1 unit 55 vlan-id 55
+set interfaces ge-0/0/1 unit 55 family inet6
+set interfaces fxp0 unit 0 family inet dhcp force-discover
+set interfaces lo0 unit 1 family inet6 address 2001:db8:540::1/128
+set interfaces lo0 unit 1 family inet6 address 2001:db8:540::100/128
+set policy-options policy-statement Tenant-A-export term send from protocol bgp
+set policy-options policy-statement Tenant-A-export term send from protocol direct
+set policy-options policy-statement Tenant-A-export term send from protocol static
+set policy-options policy-statement Tenant-A-export term send then community add Tenant-A
+set policy-options policy-statement Tenant-A-export term send then accept
+set policy-options policy-statement Tenant-A-export then reject
+set policy-options policy-statement Tenant-A-import term accept from community Tenant-A-1
+set policy-options policy-statement Tenant-A-import term accept from community Tenant-A-2
+set policy-options policy-statement Tenant-A-import term accept then accept
+set policy-options policy-statement Tenant-A-import then reject
+set policy-options policy-statement export-direct term send from protocol direct
+set policy-options policy-statement export-direct term send then accept
+set policy-options policy-statement export-direct then reject
+set policy-options policy-statement underlay-export term vpn from family inet6-vpn
+set policy-options policy-statement underlay-export term vpn then accept
+set policy-options policy-statement underlay-export then reject
+set policy-options community Tenant-A members target:1000:100
+set policy-options community Tenant-A members target:1000:101
+set policy-options community Tenant-A-1 members target:1000:100
+set policy-options community Tenant-A-2 members target:1000:101
+set routing-instances ICL instance-type virtual-router
+set routing-instances ICL routing-options router-id 3.3.3.3
+set routing-instances ICL routing-options autonomous-system 65001
+set routing-instances ICL protocols bgp group leafs type external
+set routing-instances ICL protocols bgp group leafs family inet6 unicast
+set routing-instances ICL protocols bgp group leafs export export-direct
+set routing-instances ICL protocols bgp group leafs peer-as 65000
+set routing-instances ICL protocols bgp group leafs dynamic-neighbor n peer-auto-discovery family inet6 ipv6-nd
+set routing-instances ICL protocols bgp group leafs dynamic-neighbor n peer-auto-discovery interface ge-0/0/0.55
+set routing-instances ICL protocols bgp group leafs dynamic-neighbor n peer-auto-discovery interface ge-0/0/1.55
+set routing-instances ICL interface ge-0/0/0.55
+set routing-instances ICL interface ge-0/0/1.55
+set routing-instances ICL interface lo0.1
+set tenants Tenant-A interfaces lo0 unit 100 family inet6 address 2001:db8:100::1/128
+set tenants Tenant-A routing-instances r1 instance-type vrf
+set tenants Tenant-A routing-instances r1 routing-options rib r1.inet6.0 static route ::/0 discard
+set tenants Tenant-A routing-instances r1 interface lo0.100
+set tenants Tenant-A routing-instances r1 route-distinguisher 3.3.3.3:100
+set tenants Tenant-A routing-instances r1 vrf-import Tenant-A-import
+set tenants Tenant-A routing-instances r1 vrf-export Tenant-A-export
+set tenants Tenant-A routing-instances r1 vrf-table-label
+set tenants Tenant-A security policies from-zone A to-zone A policy permit-all match source-address any
+set tenants Tenant-A security policies from-zone A to-zone A policy permit-all match destination-address any
+set tenants Tenant-A security policies from-zone A to-zone A policy permit-all match application any
+set tenants Tenant-A security policies from-zone A to-zone A policy permit-all then permit
+set tenants Tenant-A security zones security-zone A host-inbound-traffic system-services all
+set tenants Tenant-A security zones security-zone A host-inbound-traffic protocols all
+set tenants Tenant-A security zones security-zone A interfaces lo0.100
+set protocols router-advertisement interface ge-0/0/0.54
+set protocols router-advertisement interface ge-0/0/1.54
+set protocols router-advertisement interface ge-0/0/0.55
+set protocols router-advertisement interface ge-0/0/1.55
+set protocols bgp group leafs type external
+set protocols bgp group leafs family inet6 unicast
+set protocols bgp group leafs family inet6-vpn unicast
+set protocols bgp group leafs peer-as 65000
+set protocols bgp group leafs dynamic-neighbor fw peer-auto-discovery family inet6 ipv6-nd
+set protocols bgp group leafs dynamic-neighbor fw peer-auto-discovery interface ge-0/0/0.54
+set protocols bgp group leafs dynamic-neighbor fw peer-auto-discovery interface ge-0/0/1.54
+set protocols mpls interface ge-0/0/0.54
+set protocols mpls interface ge-0/0/1.54
+set routing-options router-id 3.3.3.3
+set routing-options autonomous-system 65001
+
+
+
+root@vSRX-01> show configuration
+## Last commit: 2026-01-29 22:43:46 UTC by root
+version 24.4R1.9;
+system {
+    host-name vSRX-01;
+    root-authentication {
+        encrypted-password "$6$1P6zvzZ7$Kb30ZHaH0P0V4VEjK385/xZHs//G0pE3BwK0AA/bNpLrcATsBv377ArxrDQiaR0AZ5oecBg0MJQ2p6grWI19O."; ## SECRET-DATA
+    }
+    services {
+        ssh {
+            root-login allow;
+        }
+        web-management {
+            http {
+                interface fxp0.0;
+            }
+            https {
+                system-generated-certificate;
+                interface fxp0.0;
+            }
+        }
+    }
+    syslog {
+        file interactive-commands {
+            interactive-commands any;
+        }
+        file messages {
+            any any;
+            authorization info;
+        }
+    }
+    license {
+        autoupdate {
+            url https://ae1.juniper.net/junos/key_retrieval;
+        }
+    }
+    security-profile {
+        tenants {
+            tenant Tenant-A;
+        }
+    }
+}
+chassis {
+    high-availability {
+        local-id {
+            1;
+            local-ip 2001:db8:540::1;
+            local-forwarding-ip 2001:db8:540::100;
+        }
+        peer-id 2 {
+            peer-ip 2001:db8:540::2;
+            interface lo0.1;
+            routing-instance ICL;
+            vpn-profile icl;
+            liveness-detection {
+                minimum-interval 1000;
+                multiplier 3;
+            }
+        }
+        services-redundancy-group 0 {
+            peer-id {
+                2;
+            }
+        }
+    }
+}
+security {
+    pki {
+        ca-profile ISRG_Root_X1 {
+            ca-identity ISRG_Root_X1;
+            pre-load;
+        }
+        ca-profile Lets_Encrypt {
+            ca-identity Lets_Encrypt;
+            enrollment {
+                url https://acme-v02.api.letsencrypt.org/directory;
+            }
+        }
+    }
+    ike {
+        proposal icl-prop {
+            authentication-method pre-shared-keys;
+            dh-group group20;
+            encryption-algorithm aes-256-gcm;
+            lifetime-seconds 3600;
+        }
+        policy icl {
+            proposals icl-prop;
+            pre-shared-key ascii-text "$9$2CgUHPfz/9pPf1RSyKv"; ## SECRET-DATA
+        }
+        gateway icl {
+            ike-policy icl;
+            version v2-only;
+        }
+    }
+    ipsec {
+        proposal icl-prop {
+            encryption-algorithm aes-256-gcm;
+            lifetime-seconds 3600;
+        }
+        policy icl-policy {
+            perfect-forward-secrecy {
+                keys group20;
+            }
+            proposals icl-prop;
+        }
+        vpn icl {
+            ha-link-encryption;
+            ike {
+                gateway icl;
+                ipsec-policy icl-policy;
+            }
+        }
+    }
+    forwarding-options {
+        family {
+            mpls {
+                mode packet-based;
+            }
+        }
+    }
+    flow {
+        traceoptions {
+            file DEBUG_ROOT size 2m;
+            flag basic-datapath;
+        }
+    }
+    screen {
+        ids-option untrust-screen {
+            icmp {
+                ping-death;
+            }
+            ip {
+                source-route-option;
+                tear-drop;
+            }
+            tcp {
+                syn-flood {
+                    alarm-threshold 1024;
+                    attack-threshold 200;
+                    source-threshold 1024;
+                    destination-threshold 2048;
+                    queue-size 2000; ## Warning: 'queue-size' is deprecated
+                    timeout 20;
+                }
+                land;
+            }
+        }
+    }
+    policies {
+        from-zone trust to-zone trust {
+            policy default-permit {
+                match {
+                    source-address any;
+                    destination-address any;
+                    application any;
+                }
+                then {
+                    permit;
+                }
+            }
+        }
+        from-zone trust to-zone untrust {
+            policy default-permit {
+                match {
+                    source-address any;
+                    destination-address any;
+                    application any;
+                }
+                then {
+                    permit;
+                }
+            }
+        }
+        from-zone icl to-zone icl {
+            policy permit {
+                match {
+                    source-address any;
+                    destination-address any;
+                    application any;
+                }
+                then {
+                    permit;
+                }
+            }
+        }
+        global {
+            policy permit-to-tenant {
+                match {
+                    source-address any;
+                    destination-address any;
+                    dynamic-application any;
+                    from-zone underlay;
+                    to-zone any;
+                }
+                then {
+                    permit;
+                }
+            }
+        }
+        pre-id-default-policy {
+            then {
+                log {
+                    session-close;
+                }
+            }
+        }
+    }
+    zones {
+        security-zone trust {
+            tcp-rst;
+        }
+        security-zone untrust {
+            screen untrust-screen;
+        }
+        security-zone underlay {
+            host-inbound-traffic {
+                system-services {
+                    ping;
+                }
+                protocols {
+                    bgp;
+                    bfd;
+                }
+            }
+            interfaces {
+                ge-0/0/0.54;
+                ge-0/0/1.54;
+            }
+        }
+        security-zone icl {
+            host-inbound-traffic {
+                system-services {
+                    ike;
+                    ping;
+                }
+                protocols {
+                    bgp;
+                    bfd;
+                }
+            }
+            interfaces {
+                lo0.1;
+                ge-0/0/0.55;
+                ge-0/0/1.55;
+            }
+        }
+    }
+}
+interfaces {
+    ge-0/0/0 {
+        vlan-tagging;
+        unit 54 {
+            vlan-id 54;
+            family inet6;
+            family mpls;
+        }
+        unit 55 {
+            vlan-id 55;
+            family inet6;
+        }
+    }
+    ge-0/0/1 {
+        vlan-tagging;
+        unit 54 {
+            vlan-id 54;
+            family inet6;
+            family mpls;
+        }
+        unit 55 {
+            vlan-id 55;
+            family inet6;
+        }
+    }
+    fxp0 {
+        unit 0 {
+            family inet {
+                dhcp {
+                    force-discover;
+                }
+            }
+        }
+    }
+    lo0 {
+        unit 1 {
+            family inet6 {
+                address 2001:db8:540::1/128;
+                address 2001:db8:540::100/128;
+            }
+        }
+    }
+}
+policy-options {
+    policy-statement Tenant-A-export {
+        term send {
+            from protocol [ bgp direct static ];
+            then {
+                community add Tenant-A;
+                accept;
+            }
+        }
+        then reject;
+    }
+    policy-statement Tenant-A-import {
+        term accept {
+            from community [ Tenant-A-1 Tenant-A-2 ];
+            then accept;
+        }
+        then reject;
+    }
+    policy-statement export-direct {
+        term send {
+            from protocol direct;
+            then accept;
+        }
+        then reject;
+    }
+    policy-statement underlay-export {
+        term vpn {
+            from family inet6-vpn;
+            then accept;
+        }
+        then reject;
+    }
+    community Tenant-A members [ target:1000:100 target:1000:101 ];
+    community Tenant-A-1 members target:1000:100;
+    community Tenant-A-2 members target:1000:101;
+}
+routing-instances {
+    ICL {
+        instance-type virtual-router;
+        routing-options {
+            router-id 3.3.3.3;
+            autonomous-system 65001;
+        }
+        protocols {
+            bgp {
+                group leafs {
+                    type external;
+                    family inet6 {
+                        unicast;
+                    }
+                    export export-direct;
+                    peer-as 65000;
+                    dynamic-neighbor n {
+                        peer-auto-discovery {
+                            family inet6 {
+                                ipv6-nd;
+                            }
+                            interface ge-0/0/0.55;
+                            interface ge-0/0/1.55;
+                        }
+                    }
+                }
+            }
+        }
+        interface ge-0/0/0.55;
+        interface ge-0/0/1.55;
+        interface lo0.1;
+    }
+}
+tenants {
+    Tenant-A {
+        interfaces {
+            lo0 {
+                unit 100 {
+                    family inet6 {
+                        address 2001:db8:100::1/128;
+                    }
+                }
+            }
+        }
+        routing-instances {
+            r1 {
+                instance-type vrf;
+                routing-options {
+                    rib r1.inet6.0 {
+                        static {
+                            route ::/0 discard;
+                        }
+                    }
+                }
+                interface lo0.100;
+                route-distinguisher 3.3.3.3:100;
+                vrf-import Tenant-A-import;
+                vrf-export Tenant-A-export;
+                vrf-table-label;
+            }
+        }
+        security {
+            policies {
+                from-zone A to-zone A {
+                    policy permit-all {
+                        match {
+                            source-address any;
+                            destination-address any;
+                            application any;
+                        }
+                        then {
+                            permit;
+                        }
+                    }
+                }
+            }
+            zones {
+                security-zone A {
+                    host-inbound-traffic {
+                        system-services {
+                            all;
+                        }
+                        protocols {
+                            all;
+                        }
+                    }
+                    interfaces {
+                        lo0.100;
+                    }
+                }
+            }
+        }
+    }
+}
+protocols {
+    router-advertisement {
+        interface ge-0/0/0.54;
+        interface ge-0/0/1.54;
+        interface ge-0/0/0.55;
+        interface ge-0/0/1.55;
+    }
+    bgp {
+        group leafs {
+            type external;
+            family inet6 {
+                unicast;
+            }
+            family inet6-vpn {
+                unicast;
+            }
+            peer-as 65000;
+            dynamic-neighbor fw {
+                peer-auto-discovery {
+                    family inet6 {
+                        ipv6-nd;
+                    }
+                    interface ge-0/0/0.54;
+                    interface ge-0/0/1.54;
+                }
+            }
+        }
+    }
+    mpls {
+        interface ge-0/0/0.54;
+        interface ge-0/0/1.54;
+    }
+}
+routing-options {
+    router-id 3.3.3.3;
+    autonomous-system 65001;
+}

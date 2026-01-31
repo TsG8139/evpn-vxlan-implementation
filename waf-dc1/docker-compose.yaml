@@ -1,0 +1,9 @@
+services:
+  tenant-a-waf:
+    image: coraza-caddy:latest
+    container_name: tenant-a-waf
+    restart: unless-stopped
+    network_mode: none
+    volumes:
+      - ./config:/etc/caddy/
+      - ./data:/srv/

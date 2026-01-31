@@ -1,0 +1,50 @@
+
+sudo docker build -t coraza-caddy .
+
+sudo sysctl -w net.ipv4.conf.all.forwarding=1
+sudo sysctl -w net.ipv6.conf.all.forwarding=1
+
+sudo ip link add ipv0 link ens7 type ipvlan mode l3
+
+export CONTAINER_PID=$(sudo docker inspect -f '{{.State.Pid}}' tenant-a-waf)
+sudo ip link set ipv0 netns $CONTAINER_PID
+sudo nsenter -t $CONTAINER_PID -n ip addr add 192.0.2.1/32 dev ipv0
+sudo nsenter -t $CONTAINER_PID -n ip link set ipv0 up
+sudo nsenter -t $CONTAINER_PID -n ip route add default dev ipv0
+
+
+
+ubuntu-cloud# show running-config
+Building configuration...
+
+Current configuration:
+!
+frr version 8.4.4
+frr defaults traditional
+hostname ubuntu-cloud
+log syslog informational
+service integrated-vtysh-config
+!
+ip route 192.0.2.1/32 blackhole
+!
+interface ens7
+ ipv6 nd ra-interval 20
+ no ipv6 nd suppress-ra
+exit
+!
+router bgp 65001
+ bgp router-id 2.2.2.2
+ no bgp ebgp-requires-policy
+ neighbor ens7 interface remote-as 65000
+ !
+ address-family ipv4 unicast
+  network 192.0.2.1/32
+ exit-address-family
+ !
+ address-family ipv6 unicast
+  redistribute kernel
+  neighbor ens7 activate
+ exit-address-family
+exit
+!
+end
