@@ -1,3 +1,8 @@
+# -------------------------------------------------------------------------
+# Bazuje na pliku konfiguracyjnym:
+# https://github.com/corazawaf/coraza-spoa/blob/main/example/coraza-spoa.yaml
+# Licencja źródła: Apache License 2.0 (OWASP Coraza)
+# -------------------------------------------------------------------------
 
 # The SPOA server bind address
 bind: unix:/var/run/coraza/spoa.sock
@@ -36,3 +41,4 @@ applications:
     log_file: /dev/stdout
     # The log format, one of: console/json
     log_format: console
+
